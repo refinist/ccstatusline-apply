@@ -9,3 +9,5 @@ on:
 jobs:
   unit-test:
     uses: refinist/workflows/.github/workflows/unit-test.yml@v1
+    with:
+      node-versions: '22,24,26'
