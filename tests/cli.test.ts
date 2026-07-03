@@ -77,9 +77,8 @@ test('resolveInput returns null when no input source is given (no stdin auto-rea
 });
 
 test('run(["clean"]) deletes the backup pool and reports what it removed', () => {
-  const savedHome = process.env.HOME;
   const fakeHome = fs.mkdtempSync(path.join(os.tmpdir(), 'ccsl-cli-home-'));
-  process.env.HOME = fakeHome;
+  const homeSpy = vi.spyOn(os, 'homedir').mockReturnValue(fakeHome);
   const configDir = path.join(fakeHome, '.config', 'ccstatusline');
   fs.mkdirSync(configDir, { recursive: true });
   fs.writeFileSync(
@@ -103,15 +102,13 @@ test('run(["clean"]) deletes the backup pool and reports what it removed', () =>
     expect(fs.readdirSync(poolDir)).toEqual([]);
   } finally {
     logSpy.mockRestore();
-    if (savedHome === undefined) delete process.env.HOME;
-    else process.env.HOME = savedHome;
+    homeSpy.mockRestore();
   }
 });
 
 test('run(["list"]) prints the live config and each backup in the pool', () => {
-  const savedHome = process.env.HOME;
   const fakeHome = fs.mkdtempSync(path.join(os.tmpdir(), 'ccsl-cli-home-'));
-  process.env.HOME = fakeHome;
+  const homeSpy = vi.spyOn(os, 'homedir').mockReturnValue(fakeHome);
   const configDir = path.join(fakeHome, '.config', 'ccstatusline');
   fs.mkdirSync(configDir, { recursive: true });
   fs.writeFileSync(
@@ -140,15 +137,13 @@ test('run(["list"]) prints the live config and each backup in the pool', () => {
     expect(fs.readdirSync(poolDir)).toHaveLength(1); // read-only: nothing touched
   } finally {
     logSpy.mockRestore();
-    if (savedHome === undefined) delete process.env.HOME;
-    else process.env.HOME = savedHome;
+    homeSpy.mockRestore();
   }
 });
 
 test('run(["export"]) prints only the JSON to stdout (pipeable), status to stderr', () => {
-  const savedHome = process.env.HOME;
   const fakeHome = fs.mkdtempSync(path.join(os.tmpdir(), 'ccsl-cli-home-'));
-  process.env.HOME = fakeHome;
+  const homeSpy = vi.spyOn(os, 'homedir').mockReturnValue(fakeHome);
   const configDir = path.join(fakeHome, '.config', 'ccstatusline');
   fs.mkdirSync(configDir, { recursive: true });
   const configPath = path.join(configDir, 'settings.json');
@@ -178,7 +173,6 @@ test('run(["export"]) prints only the JSON to stdout (pipeable), status to stder
   } finally {
     logSpy.mockRestore();
     errSpy.mockRestore();
-    if (savedHome === undefined) delete process.env.HOME;
-    else process.env.HOME = savedHome;
+    homeSpy.mockRestore();
   }
 });

@@ -36,16 +36,15 @@ function backupsIn(dir: string): string[] {
   }
 }
 
-// backupDir() resolves from $HOME — point it at an isolated tmp dir for the
-// duration of `fn` so tests never touch the real ~/.config/ccsa/.
+// backupDir() resolves from os.homedir() — stub it (not $HOME: Windows'
+// os.homedir() reads %USERPROFILE%, not $HOME, so an env-var override
+// silently no-ops there and every test ends up sharing the real home dir).
 function withIsolatedHome<T>(fn: () => T): T {
-  const saved = process.env.HOME;
-  process.env.HOME = tmpDir();
+  const spy = vi.spyOn(os, 'homedir').mockReturnValue(tmpDir());
   try {
     return fn();
   } finally {
-    if (saved === undefined) delete process.env.HOME;
-    else process.env.HOME = saved;
+    spy.mockRestore();
   }
 }
 
