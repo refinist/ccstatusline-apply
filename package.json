@@ -1,7 +1,7 @@
 {
   "name": "@refinist/ccsa",
   "type": "module",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "packageManager": "pnpm@11.9.0",
   "description": "Apply a ccstatusline-editor config to your local ~/.config/ccstatusline/settings.json, backing up the previous file.",
   "author": "REFINIST",
