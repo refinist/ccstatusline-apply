@@ -242,7 +242,10 @@ test('applyConfig preserves the existing file permission bits', () =>
     fs.writeFileSync(target, JSON.stringify({ version: 3, lines: [] }));
     fs.chmodSync(target, 0o600);
     applyConfig({ json: JSON_STR, configPath: target });
-    expect(fs.statSync(target).mode & 0o777).toBe(0o600); // not reset to 0o644
+    // Windows has no POSIX permission bits — chmod/stat only round-trip the
+    // read-only attribute there, so 0o600 doesn't survive as a literal value.
+    if (process.platform !== 'win32')
+      expect(fs.statSync(target).mode & 0o777).toBe(0o600); // not reset to 0o644
   }));
 
 test('restoreConfig rolls back to the newest backup and saves the current first', () =>
