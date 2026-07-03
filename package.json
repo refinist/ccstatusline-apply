@@ -1,0 +1,64 @@
+{
+  "name": "@refinist/ccsa",
+  "type": "module",
+  "version": "0.0.0",
+  "packageManager": "pnpm@11.9.0",
+  "description": "Apply a ccstatusline-editor config to your local ~/.config/ccstatusline/settings.json, backing up the previous file.",
+  "author": "REFINIST",
+  "license": "MIT",
+  "homepage": "https://github.com/refinist/ccstatusline-apply#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/refinist/ccstatusline-apply.git"
+  },
+  "bugs": {
+    "url": "https://github.com/refinist/ccstatusline-apply/issues"
+  },
+  "keywords": [
+    "ccstatusline",
+    "claude-code",
+    "statusline",
+    "cli",
+    "ccsa"
+  ],
+  "bin": {
+    "ccsa": "dist/cli.js"
+  },
+  "files": [
+    "LICENSE",
+    "README.md",
+    "README.zh-CN.md",
+    "dist"
+  ],
+  "engines": {
+    "node": ">=22.18.0"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "dev": "tsdown --watch",
+    "start": "node src/cli.ts",
+    "lint": "eslint .",
+    "lint:fix": "pnpm run lint --fix",
+    "format": "prettier --cache --write .",
+    "test": "vitest run",
+    "typecheck": "tsgo --noEmit",
+    "release": "bumpp",
+    "prepublishOnly": "pnpm run build"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "devDependencies": {
+    "@refinist/eslint-config": "^1.3.0",
+    "@refinist/prettier-config": "^1.2.0",
+    "@types/node": "^24.13.2",
+    "@typescript/native-preview": "7.0.0-dev.20260702.3",
+    "bumpp": "^11.1.0",
+    "eslint": "^10.6.0",
+    "prettier": "^3.9.4",
+    "tsdown": "^0.22.3",
+    "typescript": "~6.0.2",
+    "vitest": "^4.1.9"
+  },
+  "prettier": "@refinist/prettier-config"
+}
