@@ -3,7 +3,7 @@
   "type": "module",
   "version": "0.0.1",
   "packageManager": "pnpm@11.9.0",
-  "description": "Apply a ccstatusline-editor config to your local ~/.config/ccstatusline/settings.json, backing up the previous file.",
+  "description": "Apply a ccstatusline-editor config to ~/.config/ccstatusline/settings.json, with an automatic backup of the old file.",
   "author": "REFINIST",
   "license": "MIT",
   "homepage": "https://github.com/refinist/ccstatusline-apply#readme",

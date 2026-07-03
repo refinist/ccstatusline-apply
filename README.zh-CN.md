@@ -9,9 +9,8 @@
 </p>
 
 <p align="center">
-  <strong>CCStatusline Apply</strong>——把
-  <a href="https://github.com/sirmalloc/ccstatusline">ccstatusline</a>
-  配置直接写入磁盘，并自动备份旧文件。
+  把 <a href="https://github.com/refinist/ccstatusline-editor">ccstatusline-editor</a> 生成的配置写入
+  <code>~/.config/ccstatusline/settings.json</code>，并自动备份旧文件。
 </p>
 
 <p align="center">

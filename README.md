@@ -9,9 +9,8 @@
 </p>
 
 <p align="center">
-  <strong>CCStatusline Apply</strong> — writes a
-  <a href="https://github.com/sirmalloc/ccstatusline">ccstatusline</a>
-  config straight to disk, with an automatic backup of the old one.
+  Apply a <a href="https://github.com/refinist/ccstatusline-editor">ccstatusline-editor</a> config to
+  <code>~/.config/ccstatusline/settings.json</code>, with an automatic backup of the old file.
 </p>
 
 <p align="center">
