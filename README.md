@@ -1,17 +1,22 @@
-# ccsa
+<p align="center">
+  <img src="logo.png" alt="ccsa logo" width="300" />
+</p>
 
-**English** | [简体中文](./README.zh-CN.md)
+<h1 align="center">@refinist/ccsa</h1>
 
-> **ccs**tatusline-**a**pply.
+<p align="center">
+  <strong>English</strong> | <a href="README.zh-CN.md">简体中文</a>
+</p>
 
-Apply a [ccstatusline](https://github.com/sirmalloc/ccstatusline) config produced by
-[**ccstatusline-editor**](https://github.com/refinist/ccstatusline-editor) straight to your
-local `~/.config/ccstatusline/settings.json` — with an automatic, timestamped backup of the
-previous file.
+<p align="center">
+  <strong>CCStatusline Apply</strong> — writes a
+  <a href="https://github.com/sirmalloc/ccstatusline">ccstatusline</a>
+  config straight to disk, with an automatic backup of the old one.
+</p>
 
-The editor runs in the browser, which can't write to disk. This tiny CLI is the bridge:
-copy one command from the editor, run it, done. The next status line refresh picks it up —
-no restart, no wrapper script, no editing `~/.claude/settings.json`.
+<p align="center">
+  <a href="https://ccse.refineup.com"><strong>Build a config in the editor →</strong></a>
+</p>
 
 ## Usage
 
@@ -41,6 +46,15 @@ npx -y @refinist/ccsa@latest clean
 ```
 
 ## What it does
+
+Apply a [ccstatusline](https://github.com/sirmalloc/ccstatusline) config produced by
+[**ccstatusline-editor**](https://github.com/refinist/ccstatusline-editor) straight to your
+local `~/.config/ccstatusline/settings.json` — with an automatic, timestamped backup of the
+previous file.
+
+The editor runs in the browser, which can't write to disk. This tiny CLI is the bridge:
+copy one command from the editor, run it, done. The next status line refresh picks it up —
+no restart, no wrapper script, no editing `~/.claude/settings.json`.
 
 1. Parses and sanity-checks the config (must be a JSON object with `version` + `lines`).
 2. Locates `~/.config/ccstatusline/settings.json` (creating the folder if needed).

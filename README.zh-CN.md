@@ -1,15 +1,22 @@
-# ccsa
+<p align="center">
+  <img src="logo.png" alt="ccsa logo" width="300" />
+</p>
 
-[English](./README.md) | **简体中文**
+<h1 align="center">@refinist/ccsa</h1>
 
-> **ccs**tatusline-**a**pply.
+<p align="center">
+  <a href="README.md">English</a> | <strong>简体中文</strong>
+</p>
 
-把 [ccstatusline-editor](https://github.com/refinist/ccstatusline-editor) 生成的
-[ccstatusline](https://github.com/sirmalloc/ccstatusline) 配置直接写入你本地的
-`~/.config/ccstatusline/settings.json`——写入前自动给旧文件打一份带时间戳的备份。
+<p align="center">
+  <strong>CCStatusline Apply</strong>——把
+  <a href="https://github.com/sirmalloc/ccstatusline">ccstatusline</a>
+  配置直接写入磁盘，并自动备份旧文件。
+</p>
 
-编辑器跑在浏览器里，没法直接写磁盘。这个小工具就是那座桥：从编辑器复制一条命令，粘贴运行，完事。
-下一次状态栏刷新就会读到新配置——不用重启、不用写包装脚本、也不用手动改 `~/.claude/settings.json`。
+<p align="center">
+  <a href="https://ccse.refineup.com"><strong>在编辑器中生成配置 →</strong></a>
+</p>
 
 ## 用法
 
@@ -37,6 +44,13 @@ npx -y @refinist/ccsa@latest clean
 ```
 
 ## 它做了什么
+
+把 [ccstatusline-editor](https://github.com/refinist/ccstatusline-editor) 生成的
+[ccstatusline](https://github.com/sirmalloc/ccstatusline) 配置直接写入你本地的
+`~/.config/ccstatusline/settings.json`——写入前自动给旧文件打一份带时间戳的备份。
+
+编辑器跑在浏览器里，没法直接写磁盘。这个小工具就是那座桥：从编辑器复制一条命令，粘贴运行，完事。
+下一次状态栏刷新就会读到新配置——不用重启、不用写包装脚本、也不用手动改 `~/.claude/settings.json`。
 
 1. 解析并校验配置（必须是包含 `version` + `lines` 的 JSON 对象）。
 2. 定位 `~/.config/ccstatusline/settings.json`（目录不存在会自动创建）。
