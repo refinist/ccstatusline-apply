@@ -149,6 +149,13 @@ export function validateConfig(obj: unknown): asserts obj is CcStatusConfig {
   if (!obj || typeof obj !== 'object' || Array.isArray(obj))
     throw new Error('config must be a JSON object');
   const o = obj as Record<string, unknown>;
+  // A rotation bundle wraps N configs under `themes` (and shares the "version"
+  // key name for its own schema version) — catch the mix-up here with a
+  // pointer, before the generic "missing version" error.
+  if ('themes' in o)
+    throw new Error(
+      'this is a rotation bundle, not a single config — use `ccsa rotate on` instead'
+    );
   if (typeof o.version !== 'number')
     throw new Error(
       'config is missing a numeric "version" field — is this a ccstatusline config?'
@@ -194,7 +201,7 @@ export function mergePreserve(
   return { merged, preserved };
 }
 
-function readJsonIfExists(file: string): Record<string, unknown> | null {
+export function readJsonIfExists(file: string): Record<string, unknown> | null {
   if (!fs.existsSync(file)) return null;
   try {
     return JSON.parse(fs.readFileSync(file, 'utf8')) as Record<string, unknown>;
@@ -250,7 +257,7 @@ function fileMode(file: string, exists: boolean): number {
 // target (a same-filesystem rename is atomic). `beforeRename` runs once the temp
 // is fully written but before it replaces the target — used to copy the file
 // being overwritten to a backup, so the original survives until the last step.
-function atomicWrite(
+export function atomicWrite(
   target: string,
   content: string,
   mode: number,

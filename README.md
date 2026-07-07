@@ -42,6 +42,13 @@ npx -y @refinist/ccsa@latest export
 
 # Delete every backup ccsa has made for this config:
 npx -y @refinist/ccsa@latest clean
+
+# Rotate between multiple themes automatically (bundle built in the editor):
+npx -y @refinist/ccsa@latest rotate on -f ./ccsa-rotation.json
+
+# …check what's rotating, or turn it off and get your previous config back:
+npx -y @refinist/ccsa@latest rotate status
+npx -y @refinist/ccsa@latest rotate off
 ```
 
 ## What it does
@@ -87,15 +94,98 @@ Extra safety:
 - If the existing file is corrupt, it's still backed up but not merged from.
 - stdin is opt-in: it's only read with `--stdin` (never auto-detected).
 
+## Theme rotation
+
+`rotate` cycles your status line through a pool of themes automatically — a different
+one every hour, day, or week. You build the pool in the editor, which exports a single
+**rotation bundle**; one command turns the whole thing on, one turns it off:
+
+```sh
+npx -y @refinist/ccsa@latest rotate on -f ./ccsa-rotation.json   # or a positional <json|base64>, or --stdin
+npx -y @refinist/ccsa@latest rotate off
+```
+
+A bundle looks like this — `themes` holds full ccstatusline configs, in order:
+
+```json
+{
+  "version": 1,
+  "period": "day",
+  "strategy": "cycle",
+  "themes": [
+    { "name": "ocean", "config": { "version": 3, "lines": [...] } },
+    { "name": "sunset", "config": { "version": 3, "lines": [...] } }
+  ]
+}
+```
+
+- **`version`** — the bundle's own format version (same field name and idea as
+  a ccstatusline config's `version` — each theme's nested `config.version` is
+  a separate number, one level down); currently always `1`. A bundle from a
+  newer format makes the CLI tell you to run the latest instead of guessing.
+- **`period`** — how often the theme advances, and how often the scheduled job fires:
+  - `"hour"`, `"day"` or `"week"` — calendar-aligned presets;
+  - `{ "every": 6, "unit": "hour" }` — any custom interval (`every` 1–100,
+    `unit` `"minute"`/`"hour"`/`"day"`). Custom intervals count
+    from the moment `rotate on` ran — that timestamp is stamped into
+    `rotation.json` as `anchor`, so the slot math stays a pure function of time.
+- **`strategy`** — which theme a moment in time maps to:
+  - `"cycle"` — walk the list one step per period, wrapping around;
+  - `"random"` — a deterministic pick per period (stable within the slot, varies across).
+
+  Both work with any theme count (up to 20 themes per bundle). A 7-theme daily
+  cycle gives you a repeating weekly wardrobe — one theme per day of the week.
+
+  All three are pure functions of the current time — no counter is stored — so missed,
+  late, or duplicate scheduler firings can never make the rotation drift.
+
+`rotate on` does everything in one shot: it validates the bundle, saves your current
+config as a **pre-rotation snapshot**, writes the state to `~/.config/ccsa/rotation.json`,
+registers a user-level scheduled job that re-runs `ccsa rotate` every period, and applies
+the current slot's theme immediately. Re-running `rotate on` with a new bundle updates
+everything but keeps the original snapshot. `rotate off` is the symmetric undo:
+unregister the job, restore the snapshot, delete the state.
+
+The scheduled job — nothing to install, both schedulers ship with the OS:
+
+- **macOS**: a LaunchAgent at `~/Library/LaunchAgents/com.refineup.ccsa.rotate.plist`.
+  macOS 13+ shows a one-time "background item added" notification — informational,
+  nothing to approve. Firings missed while asleep run once on wake, and `RunAtLoad`
+  catches up at login.
+- **Windows**: a Task Scheduler task named `ccsa-rotate` — current user only, least
+  privilege, no UAC prompt, no stored password. It catches up after sleep
+  (`StartWhenAvailable`) and at logon.
+- **Other platforms**: not managed — `rotate on` still sets everything up and prints a
+  ready-made cron line to paste instead.
+
+The job bakes in **absolute paths** to your node binary and to ccsa (launchd's minimal
+`PATH` never has fnm/nvm/homebrew installs). Symlinks are resolved first, so a
+per-shell path like fnm's `fnm_multishells/…` never ends up in the schedule — the job
+points at the real file, which outlives the shell that ran `rotate on`. Running through
+`npx` needs no global install: the schedule can't point at the prunable npx cache, so
+`rotate on` first copies the (single-file, zero-dependency) CLI into
+`~/.config/ccsa/runtime/` and points the job there — a stable path nothing prunes.
+`rotate off` removes that copy again.
+
+Bare `ccsa rotate` (what the scheduler runs) is idempotent: it computes the current
+slot's theme and exits without touching anything when that theme is already showing.
+Rotation never writes to the backup pool at all — theme writes are machine-made and
+reproducible from `rotation.json`, and your human-made config is protected by the
+snapshot (which `rotate off` restores from).
+
 ## Commands
 
-| Command                | Description                                                       |
-| ---------------------- | ----------------------------------------------------------------- |
-| `apply <json\|base64>` | Apply a config (raw JSON or base64)                               |
-| `list`                 | Show the current config and every backup in the pool              |
-| `restore`              | Roll back to the newest `settings.<date>.json` backup             |
-| `export`               | Print the current config to stdout (and copy it to the clipboard) |
-| `clean`                | Delete every backup in the pool for this config                   |
+| Command                | Description                                                        |
+| ---------------------- | ------------------------------------------------------------------ |
+| `apply <json\|base64>` | Apply a config (raw JSON or base64)                                |
+| `list`                 | Show the current config and every backup in the pool               |
+| `restore`              | Roll back to the newest `settings.<date>.json` backup              |
+| `export`               | Print the current config to stdout (and copy it to the clipboard)  |
+| `clean`                | Delete every backup in the pool for this config                    |
+| `rotate on <bundle>`   | Turn on theme rotation (accepts `-f` / `--stdin` like `apply`)     |
+| `rotate off`           | Turn rotation off: unregister the job, restore the previous config |
+| `rotate status`        | Current theme, next switch, schedule registration                  |
+| `rotate`               | Apply the current slot's theme (what the scheduled job runs)       |
 
 `apply` is the default command, so the word itself may be omitted:
 `ccsa '<json>'` does the same thing. A command word, if given, must come
