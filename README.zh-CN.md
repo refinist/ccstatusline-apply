@@ -40,6 +40,13 @@ npx -y @refinist/ccsa@latest export
 
 # 删除这份配置的全部备份：
 npx -y @refinist/ccsa@latest clean
+
+# 在多套主题之间自动轮换（轮换包在编辑器里生成）：
+npx -y @refinist/ccsa@latest rotate on -f ./ccsa-rotation.json
+
+# ……查看轮换状态，或者关掉并恢复之前的配置：
+npx -y @refinist/ccsa@latest rotate status
+npx -y @refinist/ccsa@latest rotate off
 ```
 
 ## 它做了什么
@@ -78,15 +85,89 @@ npx -y @refinist/ccsa@latest clean
 - 如果现有文件已经损坏,仍然会被备份,但不会从它那里合并数据。
 - stdin 是按需开启的:只有加了 `--stdin` 才会读取,不会自动检测。
 
+## 主题轮换
+
+`rotate` 让状态栏在一池主题之间自动切换——每小时、每天或每周换一套。主题池在编辑器里
+搭建，导出为一个**轮换包**（rotation bundle）；一条命令全部开启，一条命令全部关闭：
+
+```sh
+npx -y @refinist/ccsa@latest rotate on -f ./ccsa-rotation.json   # 也支持位置参数 <json|base64> 或 --stdin
+npx -y @refinist/ccsa@latest rotate off
+```
+
+轮换包长这样——`themes` 里是完整的 ccstatusline 配置，按顺序排列：
+
+```json
+{
+  "version": 1,
+  "period": "day",
+  "strategy": "cycle",
+  "themes": [
+    { "name": "ocean", "config": { "version": 3, "lines": [...] } },
+    { "name": "sunset", "config": { "version": 3, "lines": [...] } }
+  ]
+}
+```
+
+- **`version`**——轮换包自己的格式版本（字段名和思路都和 ccstatusline 配置的
+  `version` 一致；每个主题嵌套的 `config.version` 是另一个独立的数字，低一层），
+  目前恒为 `1`。遇到更新格式的包，CLI 会提示你运行最新版而不是瞎解析。
+- **`period`**——主题多久换一次，也是定时任务的触发频率：
+  - `"hour"`、`"day"` 或 `"week"`——按日历对齐的预设；
+  - `{ "every": 6, "unit": "hour" }`——任意自定义间隔（`every` 为 1–100，
+    `unit` 为 `"minute"`/`"hour"`/`"day"`）。自定义间隔从
+    `rotate on` 执行的那一刻起计——该时间戳会作为 `anchor` 写入
+    `rotation.json`，槽位计算仍是时间的纯函数。
+- **`strategy`**——某个时刻对应哪套主题：
+  - `"cycle"`——每个周期往后走一格，走完回头；
+  - `"random"`——每个周期确定性地随机挑一套（同一周期内稳定，跨周期变化）。
+
+  两种策略对主题数量都没有要求（单个包最多 20 套）。放 7 套主题按天 cycle，
+  就是一周一循环、每天一套的效果。
+
+  三种策略都是"当前时间 → 主题"的纯函数，不存任何计数器——所以定时任务漏跑、
+  晚跑、重复跑都不会让轮换错位。
+
+`rotate on` 一口气做完所有事：校验轮换包、把你当前的配置存为**轮换前快照**、把状态写入
+`~/.config/ccsa/rotation.json`、注册一个每周期重跑 `ccsa rotate` 的用户级定时任务、并
+立刻应用当前时段的主题。拿新轮换包重跑 `rotate on` 会更新一切但保留最初的快照。
+`rotate off` 则是对称的撤销：注销任务、恢复快照、删除状态文件。
+
+定时任务不需要安装任何东西，两个平台的调度器都是系统自带：
+
+- **macOS**：LaunchAgent，位于 `~/Library/LaunchAgents/com.refineup.ccsa.rotate.plist`。
+  macOS 13+ 会弹一条一次性的"已添加后台项目"系统通知——纯提示，无需批准。睡眠期间
+  错过的触发会在唤醒后补跑一次，`RunAtLoad` 负责登录时的补跑。
+- **Windows**：任务计划程序里一条名为 `ccsa-rotate` 的任务——仅当前用户、最低权限、
+  不弹 UAC、不存密码。睡眠后（`StartWhenAvailable`）和登录时都会补跑。
+- **其他平台**：不代管——`rotate on` 仍会完成其余全部设置，并打印一条现成的 cron
+  配置行供你自行粘贴。
+
+任务里烘焙的是 node 和 ccsa 的**绝对路径**（launchd 的最小化 `PATH` 里永远没有
+fnm/nvm/homebrew 装的 node）。写入前会先解析符号链接，所以 fnm 的
+`fnm_multishells/…` 这类随 shell 会话消失的临时路径永远不会进到任务里——任务指向的
+是真实文件，不受运行 `rotate on` 的那个终端存亡影响。用 `npx` 跑无需全局安装：定时
+任务不能指向随时会被清理的 npx 缓存，所以 `rotate on` 会先把（单文件、零依赖的）CLI
+复制到 `~/.config/ccsa/runtime/`，让任务指向那个不会被清理的稳定路径；`rotate off`
+会把这份副本一并删除。
+
+裸的 `ccsa rotate`（定时任务实际执行的命令）是幂等的：算出当前时段的主题，如果它已经
+在用就什么都不碰直接退出。轮换完全不写备份池——主题写入是机器生成的，随时可由
+`rotation.json` 复现；你手工调的配置由快照保护（`rotate off` 会用它还原）。
+
 ## 命令
 
-| 命令                   | 说明                                      |
-| ---------------------- | ----------------------------------------- |
-| `apply <json\|base64>` | 应用一份配置（原始 JSON 或 base64）       |
-| `list`                 | 显示当前配置和备份池里的全部备份          |
-| `restore`              | 回滚到最新的 `settings.<date>.json` 备份  |
-| `export`               | 把当前配置打印到 stdout（并复制到剪贴板） |
-| `clean`                | 删除这份配置的全部备份                    |
+| 命令                   | 说明                                               |
+| ---------------------- | -------------------------------------------------- |
+| `apply <json\|base64>` | 应用一份配置（原始 JSON 或 base64）                |
+| `list`                 | 显示当前配置和备份池里的全部备份                   |
+| `restore`              | 回滚到最新的 `settings.<date>.json` 备份           |
+| `export`               | 把当前配置打印到 stdout（并复制到剪贴板）          |
+| `clean`                | 删除这份配置的全部备份                             |
+| `rotate on <bundle>`   | 开启主题轮换（和 `apply` 一样支持 `-f`/`--stdin`） |
+| `rotate off`           | 关闭轮换：注销定时任务、恢复之前的配置             |
+| `rotate status`        | 当前主题、下次切换时间、定时任务注册状态           |
+| `rotate`               | 应用当前时段的主题（定时任务执行的就是它）         |
 
 `apply` 是默认命令,这个词本身可以省略:`ccsa '<json>'` 效果一样。如果要写命令词,必须放在最前面:
 是 `ccsa restore`,不是 `ccsa --restore`。

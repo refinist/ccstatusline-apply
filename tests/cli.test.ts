@@ -36,6 +36,41 @@ test('parseArgs only recognizes restore/export as the command word at position 0
   expect(o._).toEqual(['restore']); // falls through as an (unused) positional, not a command switch
 });
 
+test('parseArgs reads rotate and its subcommands, keeping the bundle as a positional', () => {
+  const raw = '{"version":1}';
+  expect(parseArgs(['rotate'])).toMatchObject({ command: 'rotate', sub: null });
+  expect(parseArgs(['rotate', 'on', raw])).toMatchObject({
+    command: 'rotate',
+    sub: 'on',
+    _: [raw]
+  });
+  expect(parseArgs(['rotate', 'off'])).toMatchObject({
+    command: 'rotate',
+    sub: 'off'
+  });
+  expect(parseArgs(['rotate', 'status'])).toMatchObject({
+    command: 'rotate',
+    sub: 'status'
+  });
+  // flags mix in like everywhere else
+  expect(parseArgs(['rotate', 'on', '-f', '/tmp/b.json'])).toMatchObject({
+    command: 'rotate',
+    sub: 'on',
+    file: '/tmp/b.json'
+  });
+  // once a positional has been seen, on/off/status are no longer subcommand words
+  expect(parseArgs(['rotate', raw, 'on'])).toMatchObject({
+    command: 'rotate',
+    sub: null,
+    _: [raw, 'on']
+  });
+  // "rotate" anywhere but argv[0] is a plain positional, like the other commands
+  expect(parseArgs(['-f', '/tmp/a.json', 'rotate'])).toMatchObject({
+    command: 'apply',
+    _: ['rotate']
+  });
+});
+
 test('parseArgs accepts flags after the restore command', () => {
   expect(parseArgs(['restore', '--no-backup'])).toMatchObject({
     command: 'restore',
@@ -137,6 +172,109 @@ test('run(["list"]) prints the live config and each backup in the pool', () => {
     expect(fs.readdirSync(poolDir)).toHaveLength(1); // read-only: nothing touched
   } finally {
     logSpy.mockRestore();
+    homeSpy.mockRestore();
+  }
+});
+
+test('parseArgs reads --force (default false)', () => {
+  expect(parseArgs(['restore', '--force']).force).toBe(true);
+  expect(parseArgs(['restore']).force).toBe(false);
+});
+
+test('run(["apply", …]) is blocked while rotation is on and leaves settings.json untouched', () => {
+  const fakeHome = fs.mkdtempSync(path.join(os.tmpdir(), 'ccsl-cli-home-'));
+  const homeSpy = vi.spyOn(os, 'homedir').mockReturnValue(fakeHome);
+  const configDir = path.join(fakeHome, '.config', 'ccstatusline');
+  fs.mkdirSync(configDir, { recursive: true });
+  const configPath = path.join(configDir, 'settings.json');
+  const original = JSON.stringify({ version: 3, lines: [['a']] });
+  fs.writeFileSync(configPath, original);
+  // rotation is on: its state file exists (contents don't matter — existence is the signal)
+  const poolDir = path.join(fakeHome, '.config', 'ccsa');
+  fs.mkdirSync(poolDir, { recursive: true });
+  fs.writeFileSync(path.join(poolDir, 'rotation.json'), '{}');
+
+  const errs: unknown[] = [];
+  const errSpy = vi.spyOn(console, 'error').mockImplementation(s => {
+    errs.push(s);
+  });
+  const savedExit = process.exitCode;
+  try {
+    run(['apply', JSON.stringify({ version: 9, lines: [] })]);
+    const text = errs.join('\n');
+    expect(text).toMatch(/rotation is on/);
+    expect(text).toMatch(/rotate off/); // points at the clean exit
+    expect(process.exitCode).toBe(1);
+    expect(fs.readFileSync(configPath, 'utf8')).toBe(original); // never written
+  } finally {
+    process.exitCode = savedExit;
+    errSpy.mockRestore();
+    homeSpy.mockRestore();
+  }
+});
+
+test('run(["apply", …, "--force"]) writes even while rotation is on', () => {
+  const fakeHome = fs.mkdtempSync(path.join(os.tmpdir(), 'ccsl-cli-home-'));
+  const homeSpy = vi.spyOn(os, 'homedir').mockReturnValue(fakeHome);
+  const configDir = path.join(fakeHome, '.config', 'ccstatusline');
+  fs.mkdirSync(configDir, { recursive: true });
+  const configPath = path.join(configDir, 'settings.json');
+  fs.writeFileSync(configPath, JSON.stringify({ version: 3, lines: [] }));
+  const poolDir = path.join(fakeHome, '.config', 'ccsa');
+  fs.mkdirSync(poolDir, { recursive: true });
+  fs.writeFileSync(path.join(poolDir, 'rotation.json'), '{}');
+
+  const logs: unknown[] = [];
+  const logSpy = vi.spyOn(console, 'log').mockImplementation(s => {
+    logs.push(s);
+  });
+  try {
+    run(['apply', JSON.stringify({ version: 9, lines: [['z']] }), '--force']);
+    expect(logs.join('\n')).toMatch(/wrote/);
+    expect(JSON.parse(fs.readFileSync(configPath, 'utf8'))).toMatchObject({
+      version: 9
+    });
+  } finally {
+    logSpy.mockRestore();
+    homeSpy.mockRestore();
+  }
+});
+
+test('run(["restore"]) is blocked while rotation is on, never touching the config or pool', () => {
+  const fakeHome = fs.mkdtempSync(path.join(os.tmpdir(), 'ccsl-cli-home-'));
+  const homeSpy = vi.spyOn(os, 'homedir').mockReturnValue(fakeHome);
+  const configDir = path.join(fakeHome, '.config', 'ccstatusline');
+  fs.mkdirSync(configDir, { recursive: true });
+  const configPath = path.join(configDir, 'settings.json');
+  const original = JSON.stringify({ version: 3, lines: [] });
+  fs.writeFileSync(configPath, original);
+  const poolDir = path.join(fakeHome, '.config', 'ccsa');
+  fs.mkdirSync(poolDir, { recursive: true });
+  // a backup exists (so restore would otherwise have something to roll back to)…
+  fs.writeFileSync(
+    path.join(poolDir, 'settings.2020-01-01_10-00-00.json'),
+    '{"version":1,"lines":[]}'
+  );
+  // …but rotation is on, so restore must refuse
+  fs.writeFileSync(path.join(poolDir, 'rotation.json'), '{}');
+
+  const errs: unknown[] = [];
+  const errSpy = vi.spyOn(console, 'error').mockImplementation(s => {
+    errs.push(s);
+  });
+  const savedExit = process.exitCode;
+  try {
+    run(['restore']);
+    expect(errs.join('\n')).toMatch(/rotation is on/);
+    expect(process.exitCode).toBe(1);
+    expect(fs.readFileSync(configPath, 'utf8')).toBe(original); // untouched
+    // and no redo-point backup was written — restore never ran
+    expect(
+      fs.readdirSync(poolDir).filter(f => f.startsWith('settings.'))
+    ).toHaveLength(1);
+  } finally {
+    process.exitCode = savedExit;
+    errSpy.mockRestore();
     homeSpy.mockRestore();
   }
 });
