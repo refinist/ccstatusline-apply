@@ -19,9 +19,20 @@ import {
 } from './rotate.ts';
 import type { SchedulePeriod } from './scheduler.ts';
 
-const pkg = JSON.parse(
-  fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8')
-) as { version: string };
+// dist/cli.js normally sits next to the package.json it shipped with — but the
+// pinned runtime copy (~/.config/ccsa/runtime/ccsa.mjs, see rotate.ts) is that
+// same bundle copied into a bare directory with NO package.json neighbor.
+// Reading it unguarded at import time crashed every scheduled tick run from
+// such a copy, so tolerate a missing/unreadable file: the version is cosmetic
+// (help text and --version), and rotation must never die for a cosmetic.
+let pkg: { version: string };
+try {
+  pkg = JSON.parse(
+    fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8')
+  ) as { version: string };
+} catch {
+  pkg = { version: 'unknown' };
+}
 
 export const HELP: string = `ccsa v${pkg.version} — write a config to ~/.config/ccstatusline/settings.json
 
