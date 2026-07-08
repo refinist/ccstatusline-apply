@@ -553,11 +553,18 @@ function runRotate(o: Options, out: Style, err: Style): void {
         rotationSummary(r.preset, r.themeCount!, r.period!, r.strategy!)
       )}`
     );
+    // The theme's pool position (N/M) is a useful "which of many" for an ordinary
+    // rotation, but a weekly plan stores its themes in epoch-aligned slot order, so
+    // that number is an internal offset with no human meaning — and worse, reads as
+    // a date (Wed "7/7" looks like July 7). Drop it for the weekly preset; the theme
+    // name already says which weekday is live.
     console.log(
       detail(
         out,
         'current',
-        `${r.themeName} (${r.themeIndex! + 1}/${r.themeCount})`
+        r.preset === 'weekly'
+          ? r.themeName!
+          : `${r.themeName} (${r.themeIndex! + 1}/${r.themeCount})`
       )
     );
     console.log(
