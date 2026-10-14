@@ -22,7 +22,7 @@
 ```sh
 # Paste the JSON the editor gives you (single-quoted, one line) — `apply` is
 # the default command, so it can be omitted:
-npx -y @refinist/ccsa@latest '{"version":3,"lines":[[]]}'
+npx -y @refinist/ccsa@latest '{"version":4,"lines":[[]]}'
 
 # …or point it at a downloaded config file:
 npx -y @refinist/ccsa@latest -f ./ccstatusline-settings.json
@@ -113,8 +113,8 @@ A bundle looks like this — `themes` holds full ccstatusline configs, in order:
   "period": "day",
   "strategy": "cycle",
   "themes": [
-    { "name": "ocean", "config": { "version": 3, "lines": [...] } },
-    { "name": "sunset", "config": { "version": 3, "lines": [...] } }
+    { "name": "ocean", "config": { "version": 4, "lines": [...] } },
+    { "name": "sunset", "config": { "version": 4, "lines": [...] } }
   ]
 }
 ```
@@ -220,7 +220,7 @@ No build or `npx` needed — Node 24 runs the TypeScript sources directly:
 
 ```sh
 node src/cli.ts --help                                              # run the CLI
-HOME=/tmp/ccsl-test node src/cli.ts '{"version":3,"lines":[[]]}'     # safe test, doesn't touch the real config
+HOME=/tmp/ccsl-test node src/cli.ts '{"version":4,"lines":[[]]}'     # safe test, doesn't touch the real config
 pnpm dev -- --help                                                  # same, with --watch
 pnpm test                                                            # vitest on the .ts sources
 pnpm build                                                           # tsc → dist/ (what gets published)

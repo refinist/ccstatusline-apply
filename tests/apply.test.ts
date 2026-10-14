@@ -71,7 +71,11 @@ test('mergePreserve keeps external keys and lets new config win', () => {
     version: 3,
     lines: [['old']],
     installation: { method: 'auto-update' },
-    defaultSeparator: '|'
+    defaultSeparator: '|',
+    defaultPaddingSide: 'left',
+    numberFormat: { token: { style: 'compact' } },
+    terminalWidthCacheTtlSeconds: 30,
+    customCommandCacheTtlSeconds: 10
   };
   const next: CcStatusConfig = {
     version: 3,
@@ -82,6 +86,10 @@ test('mergePreserve keeps external keys and lets new config win', () => {
   // new config is authoritative for managed keys...
   expect(merged.lines).toEqual([['new']]);
   expect('defaultSeparator' in merged).toBe(false); // cleared in new → not carried over
+  expect('defaultPaddingSide' in merged).toBe(false);
+  expect('numberFormat' in merged).toBe(false);
+  expect('terminalWidthCacheTtlSeconds' in merged).toBe(false);
+  expect('customCommandCacheTtlSeconds' in merged).toBe(false);
   // ...but unknown/external keys are preserved
   expect(merged.installation).toEqual({ method: 'auto-update' });
   expect(preserved).toEqual(['installation']);

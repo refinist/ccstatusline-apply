@@ -21,7 +21,7 @@
 
 ```sh
 # 粘贴编辑器给你的 JSON（单引号包裹、单行）——apply 是默认命令，可以省略这个词：
-npx -y @refinist/ccsa@latest '{"version":3,"lines":[[]]}'
+npx -y @refinist/ccsa@latest '{"version":4,"lines":[[]]}'
 
 # ……或者指向一个下载好的配置文件：
 npx -y @refinist/ccsa@latest -f ./ccstatusline-settings.json
@@ -103,8 +103,8 @@ npx -y @refinist/ccsa@latest rotate off
   "period": "day",
   "strategy": "cycle",
   "themes": [
-    { "name": "ocean", "config": { "version": 3, "lines": [...] } },
-    { "name": "sunset", "config": { "version": 3, "lines": [...] } }
+    { "name": "ocean", "config": { "version": 4, "lines": [...] } },
+    { "name": "sunset", "config": { "version": 4, "lines": [...] } }
   ]
 }
 ```
@@ -200,7 +200,7 @@ ccstatusline 本身互不干扰。想测试一个临时路径的话,调用时覆
 
 ```sh
 node src/cli.ts --help                                              # 直接运行 CLI
-HOME=/tmp/ccsl-test node src/cli.ts '{"version":3,"lines":[[]]}'     # 安全测试,不会碰到真实配置
+HOME=/tmp/ccsl-test node src/cli.ts '{"version":4,"lines":[[]]}'     # 安全测试,不会碰到真实配置
 pnpm dev -- --help                                                   # 同上,带 --watch
 pnpm test                                                            # 对 .ts 源码跑 vitest
 pnpm build                                                           # tsc → dist/(发布的就是这份产物)
